@@ -2,6 +2,7 @@ const {
   createPost,
   listPosts,
   getPostById,
+  updatePost,
 } = require("../services/posts.service");
 
 const create = async (req, res) => {
@@ -30,4 +31,16 @@ const getOne = async (req, res) => {
   res.json(post);
 };
 
-module.exports = { create, list, getOne };
+const update = async (req, res) => {
+  try {
+    const updatedPost = await updatePost(Number(req.params.id), {
+      caption: req.body.caption,
+      location: req.body.location,
+    });
+    res.json(updatedPost);
+  } catch (err) {
+    res.status(404).json({ error: "Post not found" });
+  }
+};
+
+module.exports = { create, list, getOne, update };
