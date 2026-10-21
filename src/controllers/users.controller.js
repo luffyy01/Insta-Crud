@@ -1,4 +1,10 @@
-const prisma = require("../db");
+const {
+  createUser,
+  listUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+} = require("../services/users.service");
 
 const create = async (req, res) => {
   try {
@@ -10,9 +16,7 @@ const create = async (req, res) => {
     }
 
     const { username, email, fullname, bio } = req.body;
-    const result = await prisma.user.create({
-      data: { username, email, fullname, bio },
-    });
+    const result = await createUser({ username, email, fullname, bio });
     res.status(201).json(result);
   } catch (err) {
     res.status(409).json({ error: "username or email already taken" });
@@ -20,14 +24,12 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const result = await prisma.user.findMany();
+  const result = await listUsers();
   res.json(result);
 };
 
 const getOne = async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: Number(req.params.id) },
-  });
+  const user = await getUserById(Number(req.params.id));
 
   if (!user) {
     return res.status(404).json({ error: "User not found" });
@@ -38,13 +40,10 @@ const getOne = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const updatedUser = await prisma.user.update({
-      where: { id: Number(req.params.id) },
-      data: {
-        fullname: req.body.fullname,
-        bio: req.body.bio,
-        isPrivate: req.body.isPrivate,
-      },
+    const updatedUser = await updateUser(Number(req.params.id), {
+      fullname: req.body.fullname,
+      bio: req.body.bio,
+      isPrivate: req.body.isPrivate,
     });
     res.json(updatedUser);
   } catch (err) {
@@ -54,11 +53,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    await prisma.user.delete({
-      where: {
-        id: Number(req.params.id),
-      },
-    });
+    await deleteUser(Number(req.params.id));
     res.status(204).send();
   } catch (err) {
     res.status(404).json({ error: "User not found" });
