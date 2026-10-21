@@ -53,6 +53,22 @@ app.get("/users/:id", async (req, res) => {
   res.json(user);
 });
 
+app.patch("/users/:id", async (req, res) => {
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: Number(req.params.id) },
+      data: {
+        fullname: req.body.fullname,
+        bio: req.body.bio,
+        isPrivate: req.body.isPrivate,
+      },
+    });
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(404).json({ error: "User not found" });
+  }
+});
+
 app.listen(3000, () => {
   console.log("Server started on port 3000");
 });
