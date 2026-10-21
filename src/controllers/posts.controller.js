@@ -1,4 +1,8 @@
-const { createPost, listPosts } = require("../services/posts.service");
+const {
+  createPost,
+  listPosts,
+  getPostById,
+} = require("../services/posts.service");
 
 const create = async (req, res) => {
   delete req.body.id;
@@ -16,4 +20,14 @@ const list = async (req, res) => {
   res.json(result);
 };
 
-module.exports = { create, list };
+const getOne = async (req, res) => {
+  const post = await getPostById(Number(req.params.id));
+
+  if (!post) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  res.json(post);
+};
+
+module.exports = { create, list, getOne };
