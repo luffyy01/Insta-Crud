@@ -24,7 +24,7 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const { page, limit, sortBy, order } = req.query;
+  const { page, limit, sortBy, order, isPrivate, search } = req.query;
 
   if (page !== undefined && !/^[1-9]\d*$/.test(page)) {
     return res.status(400).json({ error: "page and limit must be positive integers" });
@@ -46,12 +46,28 @@ const list = async (req, res) => {
     return res.status(400).json({ error: "order must be asc or desc" });
   }
 
+  const where = {};
+  if (isPrivate !== undefined) {
+    if (isPrivate !== "true" && isPrivate !== "false") {
+      return res.status(400).json({ error: "isPrivate must be true or false" });
+    }
+    where.isPrivate = isPrivate === "true";
+  }
+
+  if (search) {
+    where.OR = [
+      { username: { contains: search, mode: "insensitive" } },
+      { fullname: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
   const pageNum = page ? parseInt(page, 10) : 1;
   let limitNum = limit ? parseInt(limit, 10) : 10;
   if (limitNum > 50) limitNum = 50;
 
   const skip = (pageNum - 1) * limitNum;
   const { data, total } = await listUsers({
+    where,
     skip,
     take: limitNum,
     orderBy: { [sortByVal]: orderVal },

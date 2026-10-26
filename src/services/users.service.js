@@ -7,14 +7,15 @@ const createUser = async (data) => {
   return result;
 };
 
-const listUsers = async ({ skip, take, orderBy }) => {
+const listUsers = async ({ skip, take, orderBy, where }) => {
   const [data, total] = await prisma.$transaction([
     prisma.user.findMany({
+      where,
       skip,
       take,
       orderBy: orderBy || { createdAt: "desc" },
     }),
-    prisma.user.count(),
+    prisma.user.count({ where }),
   ]);
   return { data, total };
 };
