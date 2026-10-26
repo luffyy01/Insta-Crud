@@ -18,7 +18,7 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const { page, limit, sortBy, order } = req.query;
+  const { page, limit, sortBy, order, location, search, from, to } = req.query;
 
   if (page !== undefined && !/^[1-9]\d*$/.test(page)) {
     return res.status(400).json({ error: "page and limit must be positive integers" });
@@ -40,12 +40,37 @@ const list = async (req, res) => {
     return res.status(400).json({ error: "order must be asc or desc" });
   }
 
+  if (from !== undefined && isNaN(new Date(from).getTime())) {
+    return res.status(400).json({ error: "from and to must be valid dates" });
+  }
+  if (to !== undefined && isNaN(new Date(to).getTime())) {
+    return res.status(400).json({ error: "from and to must be valid dates" });
+  }
+
+  const where = {};
+  if (location) {
+    where.location = { equals: location, mode: "insensitive" };
+  }
+  if (search) {
+    where.caption = { contains: search, mode: "insensitive" };
+  }
+  if (from || to) {
+    where.createdAt = {};
+    if (from) {
+      where.createdAt.gte = new Date(from);
+    }
+    if (to) {
+      where.createdAt.lt = new Date(to);
+    }
+  }
+
   const pageNum = page ? parseInt(page, 10) : 1;
   let limitNum = limit ? parseInt(limit, 10) : 10;
   if (limitNum > 50) limitNum = 50;
 
   const skip = (pageNum - 1) * limitNum;
   const { data, total } = await listPosts({
+    where,
     skip,
     take: limitNum,
     orderBy: { [sortByVal]: orderVal },
