@@ -40,12 +40,12 @@ const list = async (req, res) => {
     return res.status(400).json({ error: "page and limit must be positive integers" });
   }
 
-  const allowedSortBy = ["createdAt", "updatedAt"];
+  const allowedSortBy = ["createdAt", "updatedAt", "likes"];
   const allowedOrder = ["asc", "desc"];
 
   const sortByVal = sortBy || "createdAt";
   if (!allowedSortBy.includes(sortByVal)) {
-    return res.status(400).json({ error: "sortBy must be one of: createdAt, updatedAt" });
+    return res.status(400).json({ error: "sortBy must be one of: createdAt, updatedAt, likes" });
   }
 
   const orderVal = order || "desc";
@@ -77,6 +77,11 @@ const list = async (req, res) => {
     }
   }
 
+  const orderBy =
+    sortByVal === "likes"
+      ? [{ likes: { _count: orderVal } }, { createdAt: "desc" }]
+      : { [sortByVal]: orderVal };
+
   const pageNum = page ? parseInt(page, 10) : 1;
   let limitNum = limit ? parseInt(limit, 10) : 10;
   if (limitNum > 50) limitNum = 50;
@@ -86,7 +91,7 @@ const list = async (req, res) => {
     where,
     skip,
     take: limitNum,
-    orderBy: { [sortByVal]: orderVal },
+    orderBy,
   });
   const totalPages = total === 0 ? 0 : Math.ceil(total / limitNum);
 
