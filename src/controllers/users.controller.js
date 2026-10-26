@@ -24,8 +24,32 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const result = await listUsers();
-  res.json(result);
+  const { page, limit } = req.query;
+
+  if (page !== undefined && !/^[1-9]\d*$/.test(page)) {
+    return res.status(400).json({ error: "page and limit must be positive integers" });
+  }
+  if (limit !== undefined && !/^[1-9]\d*$/.test(limit)) {
+    return res.status(400).json({ error: "page and limit must be positive integers" });
+  }
+
+  const pageNum = page ? parseInt(page, 10) : 1;
+  let limitNum = limit ? parseInt(limit, 10) : 10;
+  if (limitNum > 50) limitNum = 50;
+
+  const skip = (pageNum - 1) * limitNum;
+  const { data, total } = await listUsers({ skip, take: limitNum });
+  const totalPages = total === 0 ? 0 : Math.ceil(total / limitNum);
+
+  res.json({
+    data,
+    meta: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages,
+    },
+  });
 };
 
 const getOne = async (req, res) => {
