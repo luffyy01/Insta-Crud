@@ -2,6 +2,7 @@ const {
   createPost,
   listPosts,
   getPostById,
+  getPostLikes,
   updatePost,
   deletePost,
 } = require("../services/posts.service");
@@ -111,6 +112,16 @@ const getOne = async (req, res) => {
   res.json(post);
 };
 
+const getLikes = async (req, res) => {
+  const users = await getPostLikes(Number(req.params.id));
+
+  if (!users) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  res.json(users);
+};
+
 const update = async (req, res) => {
   try {
     const updatedPost = await updatePost(Number(req.params.id), {
@@ -132,4 +143,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { create, list, getOne, update, remove };
+module.exports = { create, list, getOne, getLikes, update, remove };

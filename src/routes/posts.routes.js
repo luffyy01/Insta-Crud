@@ -5,6 +5,7 @@ const {
   create,
   list,
   getOne,
+  getLikes,
   update,
   remove,
 } = require("../controllers/posts.controller");
@@ -12,6 +13,7 @@ const {
 router.post("/", create);
 router.get("/", list);
 router.get("/:id", getOne);
+router.get("/:id/likes", getLikes);
 router.patch("/:id", update);
 router.delete("/:id", remove);
 
