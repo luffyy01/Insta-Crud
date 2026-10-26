@@ -5,6 +5,7 @@ const {
   updatePost,
   deletePost,
 } = require("../services/posts.service");
+const { parsePagination } = require("../utils/pagination");
 
 const create = async (req, res) => {
   delete req.body.id;
@@ -31,14 +32,12 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const { page, limit, sortBy, order, location, search, from, to } = req.query;
+  const pagination = parsePagination(req.query);
+  if (pagination.error) {
+    return res.status(400).json({ error: pagination.error });
+  }
 
-  if (page !== undefined && !/^[1-9]\d*$/.test(page)) {
-    return res.status(400).json({ error: "page and limit must be positive integers" });
-  }
-  if (limit !== undefined && !/^[1-9]\d*$/.test(limit)) {
-    return res.status(400).json({ error: "page and limit must be positive integers" });
-  }
+  const { sortBy, order, location, search, from, to } = req.query;
 
   const allowedSortBy = ["createdAt", "updatedAt", "likes"];
   const allowedOrder = ["asc", "desc"];
@@ -82,11 +81,7 @@ const list = async (req, res) => {
       ? [{ likes: { _count: orderVal } }, { createdAt: "desc" }]
       : { [sortByVal]: orderVal };
 
-  const pageNum = page ? parseInt(page, 10) : 1;
-  let limitNum = limit ? parseInt(limit, 10) : 10;
-  if (limitNum > 50) limitNum = 50;
-
-  const skip = (pageNum - 1) * limitNum;
+  const { pageNum, limitNum, skip } = pagination;
   const { data, total } = await listPosts({
     where,
     skip,

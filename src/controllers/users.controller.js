@@ -2,9 +2,11 @@ const {
   createUser,
   listUsers,
   getUserById,
+  getUserPosts,
   updateUser,
   deleteUser,
 } = require("../services/users.service");
+const { parsePagination } = require("../utils/pagination");
 
 const create = async (req, res) => {
   try {
@@ -24,14 +26,12 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const { page, limit, sortBy, order, isPrivate, search, hasPosts } = req.query;
+  const pagination = parsePagination(req.query);
+  if (pagination.error) {
+    return res.status(400).json({ error: pagination.error });
+  }
 
-  if (page !== undefined && !/^[1-9]\d*$/.test(page)) {
-    return res.status(400).json({ error: "page and limit must be positive integers" });
-  }
-  if (limit !== undefined && !/^[1-9]\d*$/.test(limit)) {
-    return res.status(400).json({ error: "page and limit must be positive integers" });
-  }
+  const { sortBy, order, isPrivate, search, hasPosts } = req.query;
 
   const allowedSortBy = ["createdAt", "username", "fullname"];
   const allowedOrder = ["asc", "desc"];
@@ -68,11 +68,7 @@ const list = async (req, res) => {
     where.posts = hasPosts === "true" ? { some: {} } : { none: {} };
   }
 
-  const pageNum = page ? parseInt(page, 10) : 1;
-  let limitNum = limit ? parseInt(limit, 10) : 10;
-  if (limitNum > 50) limitNum = 50;
-
-  const skip = (pageNum - 1) * limitNum;
+  const { pageNum, limitNum, skip } = pagination;
   const { data, total } = await listUsers({
     where,
     skip,
@@ -102,6 +98,36 @@ const getOne = async (req, res) => {
   res.json(user);
 };
 
+const getPosts = async (req, res) => {
+  const pagination = parsePagination(req.query);
+  if (pagination.error) {
+    return res.status(400).json({ error: pagination.error });
+  }
+
+  const { pageNum, limitNum, skip } = pagination;
+  const result = await getUserPosts(Number(req.params.id), {
+    skip,
+    take: limitNum,
+  });
+
+  if (!result) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const { data, total } = result;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / limitNum);
+
+  res.json({
+    data,
+    meta: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages,
+    },
+  });
+};
+
 const update = async (req, res) => {
   try {
     const updatedUser = await updateUser(Number(req.params.id), {
@@ -124,4 +150,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { create, list, getOne, update, remove };
+module.exports = { create, list, getOne, getPosts, update, remove };
