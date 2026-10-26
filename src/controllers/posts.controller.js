@@ -8,13 +8,26 @@ const {
 
 const create = async (req, res) => {
   delete req.body.id;
-  if (!req.body.imageUrl) {
-    return res.status(400).json({ error: "imageUrl is required" });
+  const { imageUrl, authorId, caption, location } = req.body;
+
+  if (!imageUrl || !authorId) {
+    return res.status(400).json({ error: "imageUrl and authorId are required" });
   }
 
-  const { imageUrl, caption, location } = req.body;
-  const result = await createPost({ imageUrl, caption, location });
-  res.status(201).json(result);
+  try {
+    const result = await createPost({
+      imageUrl,
+      authorId: Number(authorId),
+      caption,
+      location,
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    if (err.code === "P2003" || err.code === "P2025") {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 const list = async (req, res) => {
