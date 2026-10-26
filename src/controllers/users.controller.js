@@ -24,7 +24,7 @@ const create = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  const { page, limit, sortBy, order, isPrivate, search } = req.query;
+  const { page, limit, sortBy, order, isPrivate, search, hasPosts } = req.query;
 
   if (page !== undefined && !/^[1-9]\d*$/.test(page)) {
     return res.status(400).json({ error: "page and limit must be positive integers" });
@@ -59,6 +59,13 @@ const list = async (req, res) => {
       { username: { contains: search, mode: "insensitive" } },
       { fullname: { contains: search, mode: "insensitive" } },
     ];
+  }
+
+  if (hasPosts !== undefined) {
+    if (hasPosts !== "true" && hasPosts !== "false") {
+      return res.status(400).json({ error: "hasPosts must be true or false" });
+    }
+    where.posts = hasPosts === "true" ? { some: {} } : { none: {} };
   }
 
   const pageNum = page ? parseInt(page, 10) : 1;
